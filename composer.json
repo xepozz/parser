@@ -1,0 +1,17 @@
+{
+    "name": "xepozz/parser",
+    "description": "Universal parser of web pages",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Dmitriy Derepko",
+            "email": "xepozz@list.ru"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Helpers\\": "src/"
+        }
+    }
+}
