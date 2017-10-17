@@ -15,23 +15,24 @@ class Linker
     public $current = null;
 
     protected $baseUrl = null;
-    protected $page = null;
 
     protected $template = null;
     protected $options = null;
 
-    public function __construct($baseUrl, $page = null, $template = '%s/%s?%s', $options = [])
+    public function __construct($baseUrl, $template = null, $options = [])
     {
-        $this->baseUrl = $baseUrl;
-        $this->page = $page;
-        $this->template = $template;
+        if(!key_exists('https', $options))
+            $options['https'] = true;
+
+        $this->baseUrl = $this->urlize($baseUrl, $options['https']);
+        $this->template = is_string($template) ? $template : '%s/%s?%s';
         $this->options = $options;
     }
 
     public function link($page = '', $query = null, $argsSeparator = '&', $_template = null)
     {
         $this->last = $this->current;
-        $template = $_template ? $_template : $this->template;
+        $template = is_string($_template) ? $_template : $this->template;
 
         $query = is_array($query) ? $this->_buildQuery($query, $argsSeparator) : $query;
         $this->current = rtrim(sprintf($template, $this->baseUrl, $page, $query), '&?');
@@ -42,6 +43,19 @@ class Linker
     protected function _buildQuery($query, $separator = null)
     {
         return http_build_query($query, false, $separator);
+    }
+
+    protected function urlize($url, $https = null)
+    {
+        $parsedUrl = parse_url($url);
+        $url = false;
+        $scheme = $https ? 'https://' : 'http://';
+        if(key_exists('host', $parsedUrl))
+            $url = $scheme . $parsedUrl['host'];
+        elseif (key_exists('path', $parsedUrl))
+            $url = $scheme . $parsedUrl['path'];
+
+        return $url;
     }
 
     public function getTemplate()
