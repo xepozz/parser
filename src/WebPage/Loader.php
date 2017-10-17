@@ -13,13 +13,16 @@ class Loader
 {
     public static function get($page, $query = null, $decode = false, $asArray = true)
     {
-        $link = new Linker($page, $query);
-        $data = self::_load($link);
+        $link = new Linker($page);
+        $link->link('', $query);
+        $data = self::_load($link->current);
+
         return $decode ? json_decode($data, $asArray) : $data;
     }
     private static function _load($url)
     {
         try{
+
             return file_get_contents($url);
         }catch (\Exception $exception)
         {

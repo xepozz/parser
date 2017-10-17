@@ -26,5 +26,5 @@ require_once 'vendor/autoload.php';
 use Helpers\WebPage\Linker;
 
 $link = new Linker("google.com");
-echo $link->link();
+//echo $link->link();
 //echo $link->link("index.php", ["page" => 10]);
