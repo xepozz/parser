@@ -26,7 +26,7 @@ class Loader
             'decode' => true,
             'asArray' => true
         ],
-        'post' => null,
+        'post' => [],
     ];
 
     public function __construct($baseUrl)
@@ -137,7 +137,7 @@ class Loader
             }else{
                 $responseClass .= 'ResponseHTML';
                 $body = new HTML();
-                $body->loadHTML($html);
+                @$body->loadHTML($html);
             }
             return new $responseClass(
                 $data['info'],

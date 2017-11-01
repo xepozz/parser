@@ -21,7 +21,7 @@ class Mapper
             if (isset($options[$name]) && !is_array($options[$name])) {
                 $merged[$name] = $options[$name];
             }elseif (isset($options[$name]) && is_array($options[$name])){
-                $merged[$name] = self::mergeOptions($map[$name], $options[$name]);
+                $merged[$name] = self::mapMerge($map[$name], $options[$name]);
             }else{
                 $merged[$name] = $map[$name];
             }
