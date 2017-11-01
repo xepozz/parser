@@ -9,7 +9,27 @@
 namespace Helpers;
 
 
+use Helpers\Models\HTML;
+
 class ResponseHTML extends Response
 {
+    /** @var HTML */
+    public $body;
+
+    public function __construct($info, $head, \DOMDocument $body)
+    {
+        parent::__construct($info, $head, $body);
+
+        $this->info = $info;
+        $this->head = $head;
+        $this->body = $body;
+    }
+    /**
+     * @return HTML
+     */
+    public function getBody()
+    {
+        parent::getBody();
+    }
 
 }

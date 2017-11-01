@@ -9,14 +9,23 @@
 namespace Helpers;
 
 
+use Helpers\Exceptions\Exception;
+
 class ResponseJSON extends Response
 {
+    public $body;
+
+    public function __construct($info, $head, $body)
+    {
+        parent::__construct($info, $head, $body);
+    }
+
     /**
      * @return \JsonSerializable
      */
     public function getBody()
     {
-        return json_decode(parent::getBody());
+        parent::getBody();
     }
 
 }

@@ -9,22 +9,36 @@
 namespace Helpers;
 
 
+use Helpers\Exceptions\Exception;
+use DOMException;
 class Response
 {
-    /** @var \DOMDocument */
     protected $body;
     protected $head;
     protected $info;
 
-    public function __construct($info, $head, \DOMDocument $body)
+    /**
+     * Response constructor.
+     * @param $info
+     * @param $head
+     * @param $body
+     */
+    public function __construct($info, $head, $body)
     {
-        $this->info = $info;
-        $this->head = $head;
-        $this->body = $body;
+        try{
+            $this->info = $info;
+            $this->head = $head;
+            $this->body = $body;
+        }catch (Exception $exception){
+            throw new Exception(json_last_error_msg(), json_last_error());
+        }catch (DOMException $exception){
+            throw new DOMException($exception->getMessage(), $exception->getCode(), $exception->getPrevious());
+        }
     }
 
     /**
-     * @return \DOMDocument
+     * Return pages body <html> etc
+     * @return mixed
      */
     public function getBody()
     {
@@ -32,6 +46,7 @@ class Response
     }
 
     /**
+     * Return meta information from request to site
      * @return mixed
      */
     public function getHead()
@@ -40,6 +55,7 @@ class Response
     }
 
     /**
+     * Return specific CURL meta information from request to site
      * @return mixed
      */
     public function getInfo()

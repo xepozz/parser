@@ -23,14 +23,13 @@ $page = $data->getElementById('dle-content');
 //echo strtotime('28-Feb-2016 GMT');
 require_once 'vendor/autoload.php';
 
-use Helpers\WebPage\Linker;
 use Helpers\WebPage\Loader;
 
-$loader = new Loader("google.com");
-$page = $loader->load('intl/ru/policies/privacy/', 'fg=1', null, [
-    'https' => true,
+$loader = new Loader("www.google.com");
+$page = $loader->get('intl/ru/policies/privacy/', 'fg=1', [
+    'https' => false,
 ]);
 $body = $page->getBody();
 var_dump($body);
-//$loader = Loader::get('https://www.google.com/intl/ru/policies/privacy/?fg=1');
+//$loader = Loader::_get('https://www.google.com/intl/ru/policies/privacy/?fg=1');
 //var_dump($loader);

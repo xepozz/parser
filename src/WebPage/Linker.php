@@ -18,24 +18,35 @@ class Linker
 
     protected $template = null;
     protected $options = null;
+    protected $mapOptions = [
+        'https' => true,
+        'argsSeparator' => '&',
+        'template' => '%s/%s?%s'
+    ];
 
     public function __construct($baseUrl, $template = null, $options = [])
     {
-        if(!key_exists('https', $options))
-            $options['https'] = true;
-
+        $this->options = Mapper::mapMerge($this->mapOptions, $options);
         $this->baseUrl = $this->urlize($baseUrl, $options['https']);
         $this->template = is_string($template) ? $template : '%s/%s?%s';
         $this->options = $options;
     }
 
-    public function link($page = '', $query = null, $argsSeparator = '&', $_template = null)
+    public function link($page = '', $query = null, $options = [])
     {
-        $this->last = $this->current;
-        $template = is_string($_template) ? $_template : $this->template;
+        $options = Mapper::mapMerge($this->mapOptions, $options);
 
-        $query = is_array($query) ? $this->_buildQuery($query, $argsSeparator) : $query;
-        $this->current = rtrim(sprintf($template, $this->baseUrl, $page, $query), '&?');
+        $this->last = $this->current;
+        $template = is_string($options['template']) ? $options['template'] : $this->template;
+
+        $query = is_array($query) ? $this->_buildQuery($query, $options['argsSeparator']) : $query;
+        $this->current = $this->urlize(
+            rtrim(
+                sprintf($template, $this->baseUrl, $page, $query),
+                '&?'
+            ),
+            $options['https']
+        );
 
         return $this->current;
     }
@@ -48,13 +59,16 @@ class Linker
     protected function urlize($url, $https = null)
     {
         $parsedUrl = parse_url($url);
-        $url = false;
-        $scheme = $https ? 'https://' : 'http://';
+        $url = [];
+        $url['scheme'] = $https ? 'https://' : 'http://';
         if(key_exists('host', $parsedUrl))
-            $url = $scheme . $parsedUrl['host'];
-        elseif (key_exists('path', $parsedUrl))
-            $url = $scheme . $parsedUrl['path'];
+            $url['host'] = $parsedUrl['host'];
+        if (key_exists('path', $parsedUrl))
+            $url['path']= $parsedUrl['path'];
+        if (key_exists('query', $parsedUrl))
+            $url['query']= '?' . $parsedUrl['query'];
 
+        $url = join($url);
         return $url;
     }
 

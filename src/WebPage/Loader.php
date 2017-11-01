@@ -8,39 +8,51 @@
 namespace Helpers\WebPage;
 
 use Helpers\Exceptions\Exception;
+use Helpers\Exceptions\HTMLException;
+use Helpers\Exceptions\JSONException;
+use Helpers\Models\HTML;
+use Helpers\Models\JSON;
 use Helpers\Response;
+use Helpers\ResponseHTML;
+use Helpers\ResponseJSON;
+use Helpers\WebPage\Mapper;
 
 class Loader
 {
-    private $link;
+    private $linker;
+    protected static $mapOptions = [
+        'format' => 'html',
+        'json' => [
+            'decode' => true,
+            'asArray' => true
+        ],
+    ];
 
     public function __construct($baseUrl)
     {
-        $this->link = new Linker($baseUrl);
+        $this->linker = new Linker($baseUrl);
     }
 
-    /**
-     * @param $page
-     * @param null $query
-     * @param bool $decode
-     * @param bool $asArray
-     * @return Response
-     */
-    public function load($page, $query = null, $decode = false, $asArray = true)
+    public function get($page, $query = null, $options = [])
     {
-        $this->link->link($page, $query);
-        $data = self::_load($this->link->current);
-
-        return self::_response($data, $decode, $asArray);
+        $this->linker->link($page, $query, $options);
+        var_dump($this->linker);
+        var_dump($options);
+        return self::_get($this->linker, $query, $options);
     }
 
-    public static function get($url, $query = null, $decode = false, $asArray = true)
+    public static function _get($url, $query = null, $_options = [])
     {
-        $link = new Linker($url);
-        $link->link('', $query);
+        $options = Mapper::mapMerge(self::$mapOptions, $_options);
+        if($url instanceof Linker){
+            $link = $url;
+        }else{
+            $link = new Linker($url, $_options);
+            $link->link('', $query);
+        }
         $data = self::_load($link->current);
 
-        return self::_response($data, $decode, $asArray);
+        return self::_response($data, $options);
     }
     private static function _load($url)
     {
@@ -79,31 +91,60 @@ class Loader
             }*/
             $response = curl_exec($curl);
             $responseInfo = curl_getinfo($curl);
-            $head = trim(
-                str_replace(
-                    "\r\n\r\n",
-                    "\r\n",
-                    substr($response, 0, $responseInfo['header_size'])
-                )
-            );
-            $body = new \DOMDocument;
-            $body->loadHTML(substr($response, $responseInfo['header_size']));
-            return new Response(
-                $responseInfo,
-                explode("\r\n", $head),
-                $body
-            );
+            return [
+                'response' => $response,
+                'info' => $responseInfo,
+            ];
         }catch (Exception $exception)
         {
             throw new Exception("Can't get content from url: " . $url);
         }
     }
-    private static function _response($data, $decode, $asArray)
+
+    /**
+     * @param array $data
+     * @param array $options
+     * @return mixed
+     * @throws Exception
+     * @throws HTMLException
+     * @throws JSONException
+     */
+    private static function _response(array $data, array $options)
     {
         try{
-            return $decode ? json_decode($data, $asArray) : $data;
+            $head = trim(
+                str_replace(
+                    "\r\n\r\n",
+                    "\r\n",
+                    substr($data['response'], 0, $data['info']['header_size'])
+                )
+            );
+            $html = substr($data['response'], $data['info']['header_size']);
+
+//            var_dump($html);
+            $body = '';
+            $responseClass = "\Helpers\\";
+            if($options['format'] === 'json') {
+                $responseClass .= 'ResponseJSON';
+                if ($options['json']['decode'] == true)
+                    $body = JSON::decode($html);
+            }else{
+                $responseClass .= 'ResponseHTML';
+                $body = new HTML();
+                $body->loadHTML($html);
+            }
+            return new $responseClass(
+                $data['info'],
+                explode("\r\n", $head),
+                $body
+            );
+        }catch (JSONException $exception){
+            throw new JSONException(json_last_error_msg(), json_last_error());
+        }catch (HTMLException $exception){
+            throw new HTMLException($exception->getMessage(), $exception->getCode(), $exception->getPrevious());
         }catch (Exception $exception){
-            throw new Exception(json_last_error_msg(), json_last_error());
+            throw new Exception($exception->getMessage(), $exception->getCode());
         }
     }
+
 }
