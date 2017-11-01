@@ -27,9 +27,8 @@ class Linker
     public function __construct($baseUrl, $template = null, $options = [])
     {
         $this->options = Mapper::mapMerge($this->mapOptions, $options);
-        $this->baseUrl = $this->urlize($baseUrl, $options['https']);
+        $this->baseUrl = $this->urlize($baseUrl, $this->options['https']);
         $this->template = is_string($template) ? $template : '%s/%s?%s';
-        $this->options = $options;
     }
 
     public function link($page = '', $query = null, $options = [])
