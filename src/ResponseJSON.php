@@ -25,7 +25,7 @@ class ResponseJSON extends Response
      */
     public function getBody()
     {
-        parent::getBody();
+        return parent::getBody();
     }
 
 }

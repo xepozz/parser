@@ -19,6 +19,7 @@ use Helpers\WebPage\Mapper;
 
 class Loader
 {
+    protected static $cookie;
     private $linker;
     protected static $mapOptions = [
         'format' => 'html',
@@ -26,7 +27,8 @@ class Loader
             'decode' => true,
             'asArray' => true
         ],
-        'post' => [],
+        'post' => null,
+        'cookie' => null,
     ];
 
     public function __construct($baseUrl)
@@ -51,12 +53,12 @@ class Loader
             $link = new Linker($url, $_options);
             $link->link('', $query);
         }
-        $data = self::_load($link->current, $options["post"]);
+        $data = self::_load($link->current, $options);
 
         return self::_response($data, $options);
     }
 
-    private static function _load($url, $post = null)
+    private static function _load($url, $options)
     {
         try{
             $curl = curl_init($url);
@@ -66,37 +68,32 @@ class Loader
             //        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, self::CURLOPT_CONNECTTIMEOUT_DEV);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($curl, CURLINFO_HEADER_OUT, false);
-            if($post){
-                curl_setopt($curl, CURLOPT_POST, true);
-                curl_setopt($curl, CURLOPT_POSTFIELDS, $post);
+
+            if(isset($options['https']) && $options['https'] == true){
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
             }
-            /*if($this->useCookies){
+
+            curl_setopt($curl, CURLINFO_HEADER_OUT, false);
+            if(isset($options['post']) && count($options['post']) > 0){
+                curl_setopt($curl, CURLOPT_POST, true);
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $options['post']);
+            }
+            if(isset($options['cookie']) && $options['cookie'] == true){
                 curl_setopt($curl, CURLOPT_COOKIESESSION, true);
-                //            var_dump($this->cookies);
                 curl_setopt($curl, CURLOPT_COOKIE,
-                    (is_array($this->cookies)
-                        ? implode('; ', $this->cookies)
-                        : null
+                    (is_array(self::$cookie)
+                        ? implode('; ', self::$cookie)
+                        : self::$cookie
                     )
                 );
-                $data = curl_exec($curl);
-                $info = curl_getinfo($curl);
-                $errors = curl_error($curl);
-                curl_close($curl);
-
-                if(preg_match_all('/Set-Cookie: (.*?);/', $data, $cookies)) {
-                    $this->cookies = $cookies[1];
-                }
-                //            var_dump($this->cookies);
-                //            var_dump($info);
-
-                return $data;
-            }*/
+            }
             $response = curl_exec($curl);
             $responseInfo = curl_getinfo($curl);
+
+            if(preg_match_all('/Set-Cookie: (.*?);/', $response, $cookies)) {
+                self::$cookie = array_merge(self::$cookie, $cookies[1]);
+            }
             return [
                 'response' => $response,
                 'info' => $responseInfo,
