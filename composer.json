@@ -2,6 +2,7 @@
     "name": "xepozz/parser",
     "description": "Universal parser of web pages",
     "type": "library",
+    "minimum-stability": "dev",
     "license": "3766acf8f0aa765ee667c2d487f4eea527827870",
     "version": 0.1,
     "authors": [
