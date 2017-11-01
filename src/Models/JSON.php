@@ -18,10 +18,10 @@ class JSON
      * @return mixed
      * @throws JSONException
      */
-    public static function decode($string)
+    public static function decode($string, $asArray = null)
     {
         try{
-            return json_decode($string);
+            return json_decode($string, $asArray);
         }catch (JSONException $exception)
         {
             throw new JSONException(json_last_error_msg(), json_last_error());

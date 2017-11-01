@@ -19,7 +19,7 @@ use Helpers\WebPage\Mapper;
 
 class Loader
 {
-    protected static $cookie;
+    protected static $cookie = [];
     private $linker;
     protected static $mapOptions = [
         'format' => 'html',
@@ -28,7 +28,11 @@ class Loader
             'asArray' => true
         ],
         'post' => null,
-        'cookie' => null,
+        'request' => [
+            'json' => false,
+        ],
+        'cookieFile' => '',
+        'headers' => null,
     ];
 
     public function __construct($baseUrl)
@@ -39,8 +43,8 @@ class Loader
     public function get($page, $query = null, $options = [])
     {
         $this->linker->link($page, $query, $options);
-//        var_dump($this->linker);
-//        var_dump($options);
+        //        var_dump($this->linker);
+        //        var_dump($options);
         return self::_get($this->linker, $query, $options);
     }
 
@@ -62,6 +66,9 @@ class Loader
     {
         try{
             $curl = curl_init($url);
+            if(is_array($options['headers']))
+                curl_setopt($curl, CURLOPT_HTTPHEADER, $options['headers']);
+
             curl_setopt($curl, CURLOPT_HEADER, true);
             curl_setopt($curl, CURLOPT_AUTOREFERER, true);
             //        curl_setopt($curl, CURLOPT_USERAGENT, $this->useragent);
@@ -76,24 +83,40 @@ class Loader
 
             curl_setopt($curl, CURLINFO_HEADER_OUT, false);
             if(isset($options['post']) && count($options['post']) > 0){
+                $fields = $options['request']['json'] ? http_build_query($options['post']) : JSON::encode($options['post']);
                 curl_setopt($curl, CURLOPT_POST, true);
-                curl_setopt($curl, CURLOPT_POSTFIELDS, $options['post']);
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $fields);
+                //                var_dump($fields);
             }
-            if(isset($options['cookie']) && $options['cookie'] == true){
+            if(!empty($options['cookieFile'])){
+                if(!file_exists($options['cookieFile']))
+                    touch($options['cookieFile']);
+
+                $cookies = file_get_contents($options['cookieFile']);
+                self::$cookie = JSON::decode($cookies, true);
+                //                var_dump(self::$cookie);
                 curl_setopt($curl, CURLOPT_COOKIESESSION, true);
-                curl_setopt($curl, CURLOPT_COOKIE,
-                    (is_array(self::$cookie)
-                        ? implode('; ', self::$cookie)
-                        : self::$cookie
-                    )
-                );
+                //                curl_setopt($curl, CURLOPT_COOKIEFILE, $options['cookieFile']);
+                //                curl_setopt($curl, CURLOPT_COOKIEJAR, $options['cookieFile']);
+                $cookie = is_array(self::$cookie) ? http_build_query(self::$cookie, '', '; ') : self::$cookie;
+                var_dump($cookie);
+                curl_setopt($curl, CURLOPT_COOKIE, $cookie);
             }
             $response = curl_exec($curl);
             $responseInfo = curl_getinfo($curl);
-
-            if(preg_match_all('/Set-Cookie: (.*?);/', $response, $cookies)) {
-                self::$cookie = array_merge(self::$cookie, $cookies[1]);
+            if(preg_match_all('/Set-Cookie: (.*?)=(.*?);(.*?);/', $response, $cookies)) {
+                if(count($cookies[1]) == count($cookies[2]))
+                {
+                    $_cookies = [];
+                    foreach ($cookies[1] as $key => $val) {
+                        $_cookies[$val] = $cookies[2][$key];
+                    }
+                    if(count($_cookies) > 0)
+                        self::$cookie = array_merge(self::$cookie, $_cookies);
+                }
             }
+            self::cookieSave($options['cookieFile']);
+            //            var_dump(self::$cookie);
             return [
                 'response' => $response,
                 'info' => $responseInfo,
@@ -124,7 +147,7 @@ class Loader
             );
             $html = substr($data['response'], $data['info']['header_size']);
 
-//            var_dump($html);
+            //            var_dump($html);
             $body = '';
             $responseClass = "\Helpers\\";
             if($options['format'] === 'json') {
@@ -149,5 +172,17 @@ class Loader
             throw new Exception($exception->getMessage(), $exception->getCode());
         }
     }
+
+    private static function cookieSave($file)
+    {
+        return file_put_contents($file, JSON::encode(self::$cookie));
+    }
+
+    public static function getCookie()
+    {
+        return self::$cookie;
+    }
+
+
 
 }
