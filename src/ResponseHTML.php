@@ -25,11 +25,13 @@ class ResponseHTML extends Response
         $this->body = $body;
     }
     /**
-     * @return HTML
+     * @return \String|null
      */
     public function getBody()
     {
-        parent::getBody();
+        $html = parent::getBody();
+        return is_object($html) ? $html->saveHTML() : null;
     }
+
 
 }

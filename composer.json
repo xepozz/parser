@@ -2,6 +2,7 @@
     "name": "xepozz/parser",
     "description": "Universal parser of web pages",
     "type": "library",
+    "version": 0.1,
     "authors": [
         {
             "name": "Dmitriy Derepko",

@@ -26,6 +26,7 @@ class Loader
             'decode' => true,
             'asArray' => true
         ],
+        'post' => null,
     ];
 
     public function __construct($baseUrl)
@@ -36,8 +37,8 @@ class Loader
     public function get($page, $query = null, $options = [])
     {
         $this->linker->link($page, $query, $options);
-        var_dump($this->linker);
-        var_dump($options);
+//        var_dump($this->linker);
+//        var_dump($options);
         return self::_get($this->linker, $query, $options);
     }
 
@@ -50,11 +51,12 @@ class Loader
             $link = new Linker($url, $_options);
             $link->link('', $query);
         }
-        $data = self::_load($link->current);
+        $data = self::_load($link->current, $options["post"]);
 
         return self::_response($data, $options);
     }
-    private static function _load($url)
+
+    private static function _load($url, $post = null)
     {
         try{
             $curl = curl_init($url);
@@ -67,6 +69,10 @@ class Loader
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($curl, CURLINFO_HEADER_OUT, false);
+            if($post){
+                curl_setopt($curl, CURLOPT_POST, true);
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $post);
+            }
             /*if($this->useCookies){
                 curl_setopt($curl, CURLOPT_COOKIESESSION, true);
                 //            var_dump($this->cookies);

@@ -11,6 +11,8 @@ namespace Helpers;
 
 use Helpers\Exceptions\Exception;
 use DOMException;
+use Helpers\Models\HTML;
+
 class Response
 {
     protected $body;
@@ -38,7 +40,7 @@ class Response
 
     /**
      * Return pages body <html> etc
-     * @return mixed
+     * @return HTML|mixed
      */
     public function getBody()
     {
