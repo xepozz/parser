@@ -19,6 +19,7 @@ use Helpers\WebPage\Mapper;
 
 class Loader
 {
+    protected static $userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36';
     protected static $cookie = [];
     private $linker;
     protected static $mapOptions = [
@@ -65,27 +66,28 @@ class Loader
     private static function _load($url, $options)
     {
         try{
-            $curl = curl_init($url);
+            $curl = [];
             if(is_array($options['headers']))
-                curl_setopt($curl, CURLOPT_HTTPHEADER, $options['headers']);
+                $curl[CURLOPT_HTTPHEADER] = $options['headers'];
 
-            curl_setopt($curl, CURLOPT_HEADER, true);
-            curl_setopt($curl, CURLOPT_AUTOREFERER, true);
-            //        curl_setopt($curl, CURLOPT_USERAGENT, $this->useragent);
+            $curl[CURLOPT_URL]            = $url;
+            $curl[CURLOPT_HEADER]         = true;
+            $curl[CURLOPT_AUTOREFERER]    = true;
+            $curl[CURLOPT_USERAGENT]      = self::$userAgent;
+            $curl[CURLOPT_RETURNTRANSFER] = true;
+            $curl[CURLOPT_FOLLOWLOCATION] = true;
+            $curl[CURLINFO_HEADER_OUT]    = false;
             //        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, self::CURLOPT_CONNECTTIMEOUT_DEV);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
 
             if(isset($options['https']) && $options['https'] == true){
-                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+                $curl[CURLOPT_SSL_VERIFYPEER] = false;
+                $curl[CURLOPT_SSL_VERIFYHOST] = false;
             }
 
-            curl_setopt($curl, CURLINFO_HEADER_OUT, false);
             if(isset($options['post']) && count($options['post']) > 0){
                 $fields = $options['request']['json'] ? http_build_query($options['post']) : JSON::encode($options['post']);
-                curl_setopt($curl, CURLOPT_POST, true);
-                curl_setopt($curl, CURLOPT_POSTFIELDS, $fields);
+                $curl[CURLOPT_POST]       = true;
+                $curl[CURLOPT_POSTFIELDS] = $fields;
                 //                var_dump($fields);
             }
             if(!empty($options['cookieFile'])){
@@ -93,17 +95,31 @@ class Loader
                     touch($options['cookieFile']);
 
                 $cookies = file_get_contents($options['cookieFile']);
+                /*file_put_contents($options['cookieFile'], str_replace('#HttpOnly_', '', $cookies));
+                if(preg_match_all('/([a-z0-9\_]+)\t([a-z0-9\-\_]+)\s?\n/sUi', $cookies, $cookie))
+                {
+                    $cookies = [];
+                    foreach ($cookie[1] as $key => $value)
+                    {
+                        $cookies[$value] = $cookie[2][$key];
+                    }
+                    self::$cookie = $cookies;
+                }*/
                 self::$cookie = JSON::decode($cookies, true);
                 //                var_dump(self::$cookie);
-                curl_setopt($curl, CURLOPT_COOKIESESSION, true);
-                //                curl_setopt($curl, CURLOPT_COOKIEFILE, $options['cookieFile']);
-                //                curl_setopt($curl, CURLOPT_COOKIEJAR, $options['cookieFile']);
+                //                $curl[CURLOPT_COOKIEFILE] = $options['cookieFile'];
+                //                $curl[CURLOPT_COOKIEJAR] = $options['cookieFile'];
                 $cookie = is_array(self::$cookie) ? http_build_query(self::$cookie, '', '; ') : self::$cookie;
                 var_dump($cookie);
-                curl_setopt($curl, CURLOPT_COOKIE, $cookie);
+
+                $curl[CURLOPT_COOKIESESSION] = true;
+                $curl[CURLOPT_COOKIE] = $cookie;
             }
-            $response = curl_exec($curl);
-            $responseInfo = curl_getinfo($curl);
+            $ch = curl_init();
+            curl_setopt_array($ch, $curl);
+            $response = curl_exec($ch);
+            $responseInfo = curl_getinfo($ch);
+            curl_close($ch);
             if(preg_match_all('/Set-Cookie: (.*?)=(.*?);(.*?);/', $response, $cookies)) {
                 if(count($cookies[1]) == count($cookies[2]))
                 {
@@ -182,7 +198,5 @@ class Loader
     {
         return self::$cookie;
     }
-
-
 
 }
